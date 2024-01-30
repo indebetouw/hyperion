@@ -1069,6 +1069,7 @@ class ModelOutput(FreezableClass):
         name : str
             The component to retrieve. This should be one of:
                 'specific_energy'  The specific energy absorbed in each cell
+                'specific_energy_source'   absorbed directly from the source
                 'temperature'      The dust temperature in each cell (only
                                    available for cells with LTE dust)
                 'density'          The density in each cell (after possible
@@ -1115,7 +1116,7 @@ class ModelOutput(FreezableClass):
         if iteration == -1:
             iteration = find_last_iteration(self.file)
 
-        # Extract specific energy grid
+        # Extract specific energy (or temperature) grid
         if name == 'temperature':
             array = np.array(self.file['iteration_%05i' % iteration]['specific_energy'])
             g_dust = self.file['Input/Dust']
@@ -1124,7 +1125,7 @@ class ModelOutput(FreezableClass):
                 dust = g_dust['dust_%03i' % (i + 1)]
                 d = SphericalDust(dust)
                 array[i, :, :, :] = d.specific_energy2temperature(array[i, :, :, :])
-        else:
+        else:  # does this work automagically for specific_energy_source etc?
             array = np.array(self.file['iteration_%05i' % iteration][name])
 
         # If required, extract grid for a specific dust type
