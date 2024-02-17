@@ -534,6 +534,29 @@ class PointSourceCollection(Source):
         g.create_dataset('position', data=self.position, compression=True)
         Source.write(self, g)
 
+    def get_spectrum(self, nu_range=None, isrc=None):
+
+        self._check_all_set()
+
+        if self.spectrum is not None:
+            nu, fnu = self.spectrum['nu'], self.spectrum['fnu']
+            if nu_range is not None:
+                raise NotImplemented("nu_range not yet implemented for spectrum")
+        elif self.temperature is not None:
+            if nu_range is None:
+                raise ValueError("nu_range is needed for sources with Planck spectra")
+            nu = np.logspace(np.log10(nu_range[0]), np.log10(nu_range[1]))
+            nu[0] = nu_range[0]  # fix roundoff
+            nu[-1] = nu_range[1]  # fix roundoff
+            fnu = B_nu(nu, self.temperature)
+        else:
+            raise Exception("Not implemented")
+        norm = integrate_loglog(nu, fnu)
+        if isrc==None:
+            isrc=0
+        return nu, fnu / norm * self.luminosity[isrc]
+
+
 
 class SphericalSource(Source):
     '''
