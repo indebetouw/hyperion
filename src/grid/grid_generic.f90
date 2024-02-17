@@ -6,7 +6,7 @@ module grid_generic
 
   use grid_io, only : write_grid_3d, write_grid_4d
   use grid_geometry, only : geo
-  use grid_physics, only : n_photons, last_photon_id, specific_energy_sum, specific_energy, density, density_original
+  use grid_physics, only : n_photons, last_photon_id, specific_energy_sum, specific_energy, specific_energy_origin, density, density_original
   use settings, only : output_n_photons, output_specific_energy, output_density, output_density_diff, physics_io_type
 
   implicit none
@@ -58,6 +58,24 @@ contains
           end select
        else
           call warn("output_grid","specific_energy array is not allocated")
+       end if
+       if(allocated(specific_energy_origin)) then
+          select case(physics_io_type)
+          case(sp)
+             call write_grid_4d(group, 'specific_energy_source', real(specific_energy_origin(1,:,:), sp), geo)
+             call write_grid_4d(group, 'specific_energy_dust', real(specific_energy_origin(2,:,:), sp), geo)
+             call write_grid_4d(group, 'specific_energy_scat_source', real(specific_energy_origin(3,:,:), sp), geo)
+             call write_grid_4d(group, 'specific_energy_scat_dust', real(specific_energy_origin(4,:,:), sp), geo)
+          case(dp)
+             call write_grid_4d(group, 'specific_energy_source', real(specific_energy_origin(1,:,:), dp), geo)
+             call write_grid_4d(group, 'specific_energy_dust', real(specific_energy_origin(2,:,:), dp), geo)
+             call write_grid_4d(group, 'specific_energy_scat_source', real(specific_energy_origin(3,:,:), dp), geo)
+             call write_grid_4d(group, 'specific_energy_scat_dust', real(specific_energy_origin(4,:,:), dp), geo)
+          case default
+             call error("output_grid","unexpected value of physics_io_type (should be sp or dp)")
+          end select
+       else
+          call warn("output_grid","specific_energy_origin array is not allocated")
        end if
     end if
 

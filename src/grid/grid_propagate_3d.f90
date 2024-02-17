@@ -26,6 +26,27 @@ module grid_propagate
 
 contains
 
+  integer function orig(p)
+    ! Find the origin flag for a photon
+    implicit none
+    type(photon),intent(in) :: p
+    if(p%scattered) then
+       if(p%reprocessed) then
+          orig = 4 ! scattered dust emission
+       else
+          orig = 3 ! scattered source emission
+       end if
+    else
+       if(p%reprocessed) then
+          orig = 2 ! dust emission
+       else
+          orig = 1 ! source emission
+       end if
+    end if
+  end function orig
+
+
+  
   subroutine grid_propagate_debug(debug_flag)
     implicit none
     logical,intent(in) :: debug_flag
@@ -55,7 +76,7 @@ contains
 
     real(dp) :: xi
 
-    integer :: source_id
+    integer :: source_id, ph_origin
 
     radial = (p%r .dot. p%v) > 0.
 
@@ -134,8 +155,11 @@ contains
 
           do id=1,n_dust
              if(density(p%icell%ic, id) > 0._dp) then
-                specific_energy_sum(p%icell%ic, id) = &
-                     & specific_energy_sum(p%icell%ic, id) + tmin * p%current_kappa(id) * p%energy
+                specific_energy_sum(5,p%icell%ic, id) = &
+                     & specific_energy_sum(5,p%icell%ic, id) + tmin * p%current_kappa(id) * p%energy
+                ph_origin=orig(p)
+                specific_energy_sum(ph_origin,p%icell%ic, id) = &
+                     & specific_energy_sum(ph_origin,p%icell%ic, id) + tmin * p%current_kappa(id) * p%energy
              end if
           end do
 
@@ -180,8 +204,12 @@ contains
 
           do id=1,n_dust
              if(density(p%icell%ic, id) > 0._dp) then
-                specific_energy_sum(p%icell%ic, id) = &
-                     & specific_energy_sum(p%icell%ic, id) &
+                specific_energy_sum(5,p%icell%ic, id) = &
+                     & specific_energy_sum(5,p%icell%ic, id) &
+                     & + tact * p%current_kappa(id) * p%energy
+                ph_origin=orig(p)
+                specific_energy_sum(ph_origin,p%icell%ic, id) = &
+                     & specific_energy_sum(ph_origin,p%icell%ic, id) &
                      & + tact * p%current_kappa(id) * p%energy
              end if
           end do

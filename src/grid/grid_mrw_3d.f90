@@ -79,7 +79,7 @@ contains
        if(density(p%icell%ic, id) > 0._dp) then
           ! Insert ct into (9), get energy deposited for Lucy method
           e = p%energy * ct * kappa_planck(id, specific_energy(p%icell%ic, id))
-          specific_energy_sum(p%icell%ic, id) = specific_energy_sum(p%icell%ic, id) + e
+          specific_energy_sum(p%icell%ic, id, 1) = specific_energy_sum(p%icell%ic, id, 1) + e
        end if
     end do
 

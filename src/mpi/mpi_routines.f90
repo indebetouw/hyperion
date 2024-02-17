@@ -266,14 +266,14 @@ contains
     real(dp) :: tmp
     real(dp) :: dummy_dp
     integer(idp) :: dummy_idp
-    real(dp),allocatable :: tmp_2d(:,:)
+    real(dp),allocatable :: tmp_3d(:,:,:)
     integer(idp),allocatable :: tmp_int_1d(:)
 
     if(main_process()) then
-       allocate(tmp_2d(size(specific_energy_sum,1),size(specific_energy_sum,2)))
-       call mpi_reduce(specific_energy_sum, tmp_2d, size(specific_energy_sum), mpi_real8, mpi_sum, rank_main, mpi_comm_world, ierr)
-       specific_energy_sum = tmp_2d
-       deallocate(tmp_2d)
+       allocate(tmp_3d(size(specific_energy_sum,1),size(specific_energy_sum,2),size(specific_energy_sum,3)))
+       call mpi_reduce(specific_energy_sum, tmp_3d, size(specific_energy_sum), mpi_real8, mpi_sum, rank_main, mpi_comm_world, ierr)
+       specific_energy_sum = tmp_3d
+       deallocate(tmp_3d)
     else
        call mpi_reduce(specific_energy_sum, dummy_dp, size(specific_energy_sum), mpi_real8, mpi_sum, rank_main, mpi_comm_world, ierr)
     end if

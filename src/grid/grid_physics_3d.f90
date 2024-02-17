@@ -36,7 +36,8 @@ module grid_physics
   integer(idp),allocatable, public :: n_photons(:)
   integer(idp),allocatable, public :: last_photon_id(:)
   real(dp),allocatable, public :: specific_energy(:,:)
-  real(dp),allocatable, public :: specific_energy_sum(:,:)
+  real(dp),allocatable, public :: specific_energy_origin(:,:,:)
+  real(dp),allocatable, public :: specific_energy_sum(:,:,:)
   real(dp),allocatable, public :: specific_energy_additional(:,:)
   real(dp),allocatable, public :: energy_abs_tot(:)
   real(dp),allocatable, public :: minimum_specific_energy(:)
@@ -99,6 +100,7 @@ contains
     ! Density
     allocate(density(geo%n_cells, n_dust))
     allocate(specific_energy(geo%n_cells, n_dust))
+    allocate(specific_energy_origin(4,geo%n_cells, n_dust))
 
     if(n_dust > 0) then
 
@@ -188,7 +190,7 @@ contains
     allocate(tmp_column_density(n_dust))
 
     ! Specific energy summation
-    allocate(specific_energy_sum(geo%n_cells, n_dust))
+    allocate(specific_energy_sum(5,geo%n_cells, n_dust))
     specific_energy_sum = 0._dp
 
     ! Total energy absorbed
@@ -255,7 +257,7 @@ contains
   subroutine sublimate_dust()
 
     implicit none
-    integer :: ic, id
+    integer :: ic, id, io
     integer :: reset
 
     reset = 0
@@ -269,6 +271,9 @@ contains
              if(specific_energy(ic, id) > d(id)%sublimation_specific_energy) then
                 density(ic, id) = 0.
                 specific_energy(ic, id) = minimum_specific_energy(id)
+                do io=1,4
+                   specific_energy_origin(io, ic, id) = minimum_specific_energy(id)
+                end do
                 reset = reset + 1
              end if
           end do
@@ -316,12 +321,15 @@ contains
 
     real(dp), intent(in) :: scale
 
-    integer :: id
+    integer :: id, io
 
     if(main_process()) write(*,'(" [grid_physics] updating energy_abs")')
 
     do id=1,n_dust
-       specific_energy(:,id) = specific_energy_sum(:,id) * scale / geo%volume
+       specific_energy(:,id) = specific_energy_sum(5,:,id) * scale / geo%volume
+       do io=1,4
+          specific_energy_origin(io, :, id) = specific_energy_sum(io,:,id) * scale / geo%volume
+       end do
        where(geo%volume == 0._dp)
           specific_energy(:,id) = 0._dp
        end where

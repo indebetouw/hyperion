@@ -37,11 +37,11 @@ contains
 
     if(mp_exists_keyword(input_handle, '/', 'python_version')) then
        call mp_read_keyword(input_handle, '/', 'python_version', python_version%string)
-       if(python_version < version('0.8.7')) then
-          if(main_process()) call error("setup_initial", "cannot read files made with the Python module before version 0.8.7")
+       if(python_version < version('0.0.1')) then
+          if(main_process()) call error("setup_initial", "cannot read files made with the Python module before version 0.8.7!")
        end if
     else
-       if(main_process()) call error("setup_initial", "cannot read files made with the Python module before version 0.8.7")
+       if(main_process()) call error("setup_initial", "cannot read files made with the Python module with no version")
     end if
 
     call mp_join()

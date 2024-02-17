@@ -139,6 +139,9 @@ contains
     ! Sync energy emitted
     call mp_sync(energy_current)
 
+    write(*,'(" [do_final] energy_current: ", ES9.2)') energy_current
+    write(*,'(" [do_final] energy_total: ", ES9.2)') energy_total
+
     if(make_binned_images) call binned_images_adjust_scale(energy_total/energy_current)
     if(make_peeled_images) call peeled_images_adjust_scale(energy_total/energy_current)
 
