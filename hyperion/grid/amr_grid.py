@@ -602,16 +602,12 @@ class AMRGrid(FreezableClass):
             >>> ds = load('DD0010/moving7_0010')
             >>> def _dust_density(field, data):
             ...     return data[('gas', 'density')].in_units('g/cm**3') * 0.01
-            >>> ds.add_field(('gas', 'dust_density'), function=_dust_density, units='g/cm**3')
+            >>> ds.add_field(('gas', 'dust_density'), function=_dust_density, units='g/cm**3', sampling_type='cell')
 
             >>> amr = AMRGrid.from_yt(ds, quantity_mapping={'density':('gas', 'dust_density')})
         """
 
         import yt
-        from distutils.version import LooseVersion
-
-        if not LooseVersion(yt.__version__) >= LooseVersion('3'):
-            raise ImportError("yt 3.0 or later is required")
 
         from .yt_wrappers import yt_dataset_to_amr_grid
         return yt_dataset_to_amr_grid(ds, quantity_mapping=quantity_mapping)

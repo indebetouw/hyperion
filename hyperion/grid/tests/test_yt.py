@@ -1,7 +1,6 @@
 import os
 import sys
 from copy import deepcopy
-from distutils.version import LooseVersion
 import h5py
 import numpy as np
 import pytest
@@ -21,10 +20,7 @@ try:
 except:
     YT_VERSION = None
 else:
-    if LooseVersion(yt.__version__) >= LooseVersion('3'):
-        YT_VERSION = 3
-    else:
-        YT_VERSION = 2
+    YT_VERSION = 3
 
 DATA = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -75,7 +71,7 @@ class TestToYt(object):
     @pytest.mark.parametrize(('grid_type'), ALL_GRID_TYPES)
     def test_to_yt(self, tmpdir, grid_type):
 
-        from yt.mods import ProjectionPlot
+        from yt import ProjectionPlot
 
         g = self.grid[grid_type]
         g['density'] = []
@@ -91,7 +87,8 @@ class TestToYt(object):
         p.save(tmpdir.join('test.png').strpath)
 
 
-@pytest.mark.skipif("YT_VERSION is None or YT_VERSION < 3")
+@pytest.mark.requires_hyperion_binaries
+@pytest.mark.skipif("YT_VERSION is None")
 def test_from_yt(tmpdir):
 
     from yt import load
@@ -101,7 +98,7 @@ def test_from_yt(tmpdir):
     def _dust_density(field, data):
         return data["density"].in_units('g/cm**3') * 0.01
 
-    ds.add_field(("gas", "dust_density"), function=_dust_density, units='g/cm**3')
+    ds.add_field(("gas", "dust_density"), function=_dust_density, units='g/cm**3', sampling_type='cell')
 
     amr = AMRGrid.from_yt(ds, quantity_mapping={'density': ('gas', 'dust_density')})
 
@@ -147,7 +144,7 @@ def test_axis_ordering_cartesian():
     g['density'] = []
     g['density'].append(density)
 
-    from yt.mods import ProjectionPlot, SlicePlot
+    from yt import ProjectionPlot, SlicePlot
 
     pf = g.to_yt()
 
@@ -177,7 +174,7 @@ def test_axis_ordering_amr():
     grid.quantities['density'] = []
     grid.quantities['density'].append(np.arange(grid.nz)[:, None, None] * np.ones((grid.nz, grid.ny, grid.nx)))
 
-    from yt.mods import ProjectionPlot, SlicePlot
+    from yt import ProjectionPlot, SlicePlot
 
     pf = g.to_yt()
 

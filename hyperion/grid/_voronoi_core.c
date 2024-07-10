@@ -1,8 +1,14 @@
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define Py_LIMITED_API 0x030900f0
+
 #include <Python.h>
 #include <limits.h>
 #include <string.h>
 #include <numpy/arrayobject.h>
 #include <numpy/npy_math.h>
+
+/* Workaround for gcc<10 */
+struct _typeobject {int _placeholder;};
 
 // Declaration of the voro++ wrapping function.
 const char *hyperion_voropp_wrap(int **sparse_neighbours, int **neigh_pos, int *nn, double **volumes, double **bb_min, double **bb_max, double **vertices, int *max_nv,
@@ -24,21 +30,13 @@ static PyMethodDef module_methods[] = {
 
 /* This is the function that is called on import. */
 
-#if PY_MAJOR_VERSION >= 3
-  #define MOD_ERROR_VAL NULL
-  #define MOD_SUCCESS_VAL(val) val
-  #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-  #define MOD_DEF(ob, name, doc, methods) \
-          static struct PyModuleDef moduledef = { \
-            PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
-          ob = PyModule_Create(&moduledef);
-#else
-  #define MOD_ERROR_VAL
-  #define MOD_SUCCESS_VAL(val)
-  #define MOD_INIT(name) void init##name(void)
-  #define MOD_DEF(ob, name, doc, methods) \
-          ob = Py_InitModule3(name, methods, doc);
-#endif
+#define MOD_ERROR_VAL NULL
+#define MOD_SUCCESS_VAL(val) val
+#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+#define MOD_DEF(ob, name, doc, methods) \
+        static struct PyModuleDef moduledef = { \
+        PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+        ob = PyModule_Create(&moduledef);
 
 MOD_INIT(_voronoi_core)
 {
@@ -54,37 +52,22 @@ static PyObject *_voropp_wrapper(PyObject *self, PyObject *args)
 {
     PyObject *sites_obj, *domain_obj, *wall_args_obj;
     int with_vertices;
-    const char *wall_str;
+    const char *wall_str = "";
     int verbose;
     int with_sampling, n_samples, min_cell_samples, seed;
 
-    if (!PyArg_ParseTuple(args, "OOisOiiiii", &sites_obj, &domain_obj, &with_vertices,&wall_str,&wall_args_obj,
+    if (!PyArg_ParseTuple(args, "OOiiiiii", &sites_obj, &domain_obj, &with_vertices,
         &with_sampling, &n_samples, &min_cell_samples, &seed, &verbose))
     {
         return NULL;
     }
 
-    // Handle the wall-related arguments.
-    // NOTE: at the moment, the walls implemented in voro++ have at most 7 doubles as construction params.
     double wall_args_arr[7];
-    // The actual number of construction arguments.
-    int n_wall_args = (int)PyTuple_GET_SIZE(wall_args_obj);
-    if (n_wall_args > 7) {
-        PyErr_SetString(PyExc_TypeError, "Too many construction arguments for the wall object.");
-        return NULL;
-    }
-    {
-        // Read the wall construction arguments.
-        int i;
-        for (i = 0; i < n_wall_args; ++i) {
-            // NOTE: PyTuple_GetItem returns a borrowed reference, no need to handle refcount.
-            wall_args_arr[i] = PyFloat_AS_DOUBLE(PyTuple_GetItem(wall_args_obj,(Py_ssize_t)i));
-        }
-    }
+    int n_wall_args = 0;
 
     /* Interpret the input objects as `numpy` arrays. */
-    PyObject *s_array = PyArray_FROM_OTF(sites_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-    PyObject *d_array = PyArray_FROM_OTF(domain_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    PyObject *s_array = PyArray_FROM_OTF(sites_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    PyObject *d_array = PyArray_FROM_OTF(domain_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
 
     /* Handle invalid input. */
     if (s_array == NULL || d_array == NULL) {

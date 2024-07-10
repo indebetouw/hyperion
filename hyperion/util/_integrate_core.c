@@ -1,6 +1,12 @@
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define Py_LIMITED_API 0x030900f0
+
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include <numpy/npy_math.h>
+
+/* Workaround for gcc<10 */
+struct _typeobject {int _placeholder;};
 
 /* Define constants */
 double const LN10 = 2.30258509299404590109;
@@ -29,21 +35,13 @@ static PyMethodDef module_methods[] = {
 
 /* This is the function that is called on import. */
 
-#if PY_MAJOR_VERSION >= 3
-  #define MOD_ERROR_VAL NULL
-  #define MOD_SUCCESS_VAL(val) val
-  #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-  #define MOD_DEF(ob, name, doc, methods) \
-          static struct PyModuleDef moduledef = { \
-            PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
-          ob = PyModule_Create(&moduledef);
-#else
-  #define MOD_ERROR_VAL
-  #define MOD_SUCCESS_VAL(val)
-  #define MOD_INIT(name) void init##name(void)
-  #define MOD_DEF(ob, name, doc, methods) \
-          ob = Py_InitModule3(name, methods, doc);
-#endif
+#define MOD_ERROR_VAL NULL
+#define MOD_SUCCESS_VAL(val) val
+#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+#define MOD_DEF(ob, name, doc, methods) \
+        static struct PyModuleDef moduledef = { \
+        PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+        ob = PyModule_Create(&moduledef);
 
 MOD_INIT(_integrate_core)
 {
@@ -66,8 +64,8 @@ static PyObject *_integrate(PyObject *self, PyObject *args)
         return NULL;
 
     /* Interpret the input objects as `numpy` arrays. */
-    PyObject *x_array = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-    PyObject *y_array = PyArray_FROM_OTF(y_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    PyObject *x_array = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    PyObject *y_array = PyArray_FROM_OTF(y_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
 
     /* If that didn't work, throw an `Exception`. */
     if (x_array == NULL || y_array == NULL) {
@@ -134,8 +132,8 @@ static PyObject *_integrate_loglin(PyObject *self, PyObject *args)
         return NULL;
 
     /* Interpret the input objects as `numpy` arrays. */
-    PyObject *x_array = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-    PyObject *y_array = PyArray_FROM_OTF(y_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    PyObject *x_array = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    PyObject *y_array = PyArray_FROM_OTF(y_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
 
     /* If that didn't work, throw an `Exception`. */
     if (x_array == NULL || y_array == NULL) {
@@ -205,8 +203,8 @@ static PyObject *_integrate_linlog(PyObject *self, PyObject *args)
         return NULL;
 
     /* Interpret the input objects as `numpy` arrays. */
-    PyObject *x_array = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-    PyObject *y_array = PyArray_FROM_OTF(y_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    PyObject *x_array = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    PyObject *y_array = PyArray_FROM_OTF(y_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
 
     /* If that didn't work, throw an `Exception`. */
     if (x_array == NULL || y_array == NULL) {
@@ -277,8 +275,8 @@ static PyObject *_integrate_loglog(PyObject *self, PyObject *args)
         return NULL;
 
     /* Interpret the input objects as `numpy` arrays. */
-    PyObject *x_array = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-    PyObject *y_array = PyArray_FROM_OTF(y_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    PyObject *x_array = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    PyObject *y_array = PyArray_FROM_OTF(y_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
 
     /* If that didn't work, throw an `Exception`. */
     if (x_array == NULL || y_array == NULL) {
