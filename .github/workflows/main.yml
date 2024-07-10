@@ -5,6 +5,7 @@ on:
   pull_request:
 
 jobs:
+
   tests:
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@v1
     with:
@@ -12,12 +13,44 @@ jobs:
         apt:
           - libhdf5-serial-dev
           - libmpich-dev
+        brew:
+          - hdf5-mpi
       envs: |
-        - linux: py37-test-bitlevel
-          runs-on: ubuntu-20.04
-        - linux: py38-test-bitlevel
-          runs-on: ubuntu-20.04
+        # Tests that don't rely on Fortran binaries
+        - linux: py39-test-nobinaries
+        - linux: py310-test-nobinaries
+        - linux: py311-test-nobinaries
+        - linux: py312-test-nobinaries
+        - macos: py39-test-nobinaries
+        - macos: py310-test-nobinaries
+        - macos: py311-test-nobinaries
+        - macos: py312-test-nobinaries
+        - windows: py39-test-nobinaries
+        - windows: py310-test-nobinaries
+        - windows: py311-test-nobinaries
+        - windows: py312-test-nobinaries
+
+        # Main tests including Fortran binaries
+        - linux: py39-test
+        - linux: py310-test
+        - linux: py311-test
+        - linux: py312-test
+
+        # Bit-level tests
         - linux: py39-test-bitlevel
           runs-on: ubuntu-20.04
         - linux: py310-test-bitlevel
           runs-on: ubuntu-20.04
+
+
+  publish:
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@v1
+    with:
+      test_extras: test
+      test_command: pytest --pyargs hyperion -m "not requires_hyperion_binaries"
+      targets: |
+        - linux
+        - macos
+        - windows
+    secrets:
+      pypi_token: ${{ secrets.pypi_token }}

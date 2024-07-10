@@ -1,9 +1,14 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define Py_LIMITED_API 0x030900f0
+#include <stdbool.h>
 
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include <numpy/npy_math.h>
 #include <math.h>
+
+/* Workaround for gcc<10 */
+struct _typeobject {int _placeholder;};
 
 /* Define docstrings */
 static char module_docstring[] = "Helpers for discretizing SPH particles";
@@ -21,7 +26,7 @@ static PyMethodDef module_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-int recursive_position_width(int i, long *refined,
+int recursive_position_width(int i, npy_bool *refined,
                              double x, double y, double z,
                              double dx, double dy, double dz,
                              double *xc, double *yc, double *zc,
@@ -29,21 +34,13 @@ int recursive_position_width(int i, long *refined,
 
 /* This is the function that is called on import. */
 
-#if PY_MAJOR_VERSION >= 3
-  #define MOD_ERROR_VAL NULL
-  #define MOD_SUCCESS_VAL(val) val
-  #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-  #define MOD_DEF(ob, name, doc, methods) \
-          static struct PyModuleDef moduledef = { \
-            PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
-          ob = PyModule_Create(&moduledef);
-#else
-  #define MOD_ERROR_VAL
-  #define MOD_SUCCESS_VAL(val)
-  #define MOD_INIT(name) void init##name(void)
-  #define MOD_DEF(ob, name, doc, methods) \
-          ob = Py_InitModule3(name, methods, doc);
-#endif
+#define MOD_ERROR_VAL NULL
+#define MOD_SUCCESS_VAL(val) val
+#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
+#define MOD_DEF(ob, name, doc, methods) \
+        static struct PyModuleDef moduledef = { \
+        PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+        ob = PyModule_Create(&moduledef);
 
 MOD_INIT(_discretize_sph)
 {
@@ -238,7 +235,7 @@ static PyObject *_get_positions_widths(PyObject *self, PyObject *args)
         return NULL;
 
     /* Interpret the input objects as `numpy` arrays. */
-    PyObject *refined_array = PyArray_FROM_OTF(refined_obj, NPY_LONGLONG, NPY_ARRAY_IN_ARRAY);
+    PyObject *refined_array = PyArray_FROM_OTF(refined_obj, NPY_BOOL, NPY_ARRAY_IN_ARRAY);
 
     /* If that didn't work, throw an `Exception`. */
     if (refined_array == NULL) {
@@ -298,7 +295,7 @@ static PyObject *_get_positions_widths(PyObject *self, PyObject *args)
     }
 
     /* Get pointers to the data as C-types. */
-    long *refined = (long*)PyArray_DATA(refined_array);
+    npy_bool *refined = (bool*)PyArray_DATA(refined_array);
     double *xc = (double*)PyArray_DATA(xc_array);
     double *yc = (double*)PyArray_DATA(yc_array);
     double *zc = (double*)PyArray_DATA(zc_array);
@@ -312,15 +309,16 @@ static PyObject *_get_positions_widths(PyObject *self, PyObject *args)
 
     if(i != ncells - 1) {
         PyErr_SetString(PyExc_TypeError, "An error occurred when retrieving the cell properties");
+        Py_XDECREF(refined_array);
+        return NULL;
     }
 
-    // return xc_array, yc_array, zc_array;
     return Py_BuildValue("OOOOOO", xc_array, yc_array, zc_array, xw_array, yw_array, zw_array);
 
 }
 
 
-int recursive_position_width(int i, long *refined,
+int recursive_position_width(int i, npy_bool *refined,
                              double x, double y, double z,
                              double dx, double dy, double dz,
                              double *xc, double *yc, double *zc,
